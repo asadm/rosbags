@@ -77,7 +77,11 @@ Two kinds of tests live in `js/tests/`:
 * `test_writer_rosbag_read.js` – round-trip check that writes with *this*
   writer and reads back using the upstream `rosbag` npm dependency.
 
-Run them via:
+The tests load **`dist/rosbags.js`**, so they exercise the exact bundle you
+would publish on npm.  A placeholder stub exists in `dist/` which forwards to
+`writer.js`; building will overwrite it.
+
+Run the suite via:
 
 ```bash
 node js/tests/run.js

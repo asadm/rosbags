@@ -8,7 +8,7 @@ const path = require('path');
 const assert = require('assert');
 const { spawnSync } = require('child_process');
 
-const { Writer } = require('../writer');
+const { Writer } = require('../dist/rosbags');
 
 const TMP_DIR = path.join(__dirname, 'tmp');
 fs.mkdirSync(TMP_DIR, { recursive: true });

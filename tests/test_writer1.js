@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 
-const { Writer, WriterError } = require('../writer');
+const { Writer, WriterError } = require('../dist/rosbags');
 
 const TMP_DIR = path.join(__dirname, 'tmp');
 fs.mkdirSync(TMP_DIR, { recursive: true });

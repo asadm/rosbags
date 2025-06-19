@@ -2,6 +2,7 @@
 
 try {
   require('./test_writer1');
+  require('./test_writer_rosbag_read');
   console.log('\nAll JS tests passed');
 } catch (err) {
   console.error('JS tests failed:', err);

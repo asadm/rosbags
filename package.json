@@ -6,11 +6,13 @@
   "type": "commonjs",
   "author": "Asad Memon",
   "license": "Apache-2.0",
-  "dependencies": {},
   "exports": {
     ".": "./writer.js"
   },
   "scripts": {
     "test": "node tests/run.js"
+  },
+  "devDependencies": {
+    "rosbag": "^4.0.1"
   }
 }

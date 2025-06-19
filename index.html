@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Web cam + IMU → rosbag1</title>
+  <style>
+    body { font-family: sans-serif; margin: 2em; }
+    video { border: 1px solid #888; max-width: 100%; }
+    button { margin: 1em .5em 0 0; padding: .6em 1.2em; }
+  </style>
+</head>
+<body>
+  <h1>Webcam + random IMU → bag recorder</h1>
+  <video id="preview" autoplay muted playsinline></video><br/>
+  <button id="btnStart">Start recording</button>
+  <button id="btnStop"  disabled>Stop recording</button>
+  <script type="module">
+    // Buffer polyfill for browsers (writer.js expects Node Buffer API)
+    import { Buffer as BufferPolyfill } from 'https://cdn.jsdelivr.net/npm/buffer@6.0.3/+esm';
+    window.Buffer = BufferPolyfill;
+
+    import { Writer, buildImageMessage, buildImuMessage } from './writer.browser.js';
+
+    // Element references ------------------------------------------------------
+    const video = document.getElementById('preview');
+    const btnStart = document.getElementById('btnStart');
+    const btnStop  = document.getElementById('btnStop');
+
+    // Globals for the current session -----------------------------------------
+    let stream      = null;    // MediaStream from getUserMedia
+    let writer      = null;    // rosbags Writer
+    let connImage   = null;    // Connection objects
+    let connImu     = null;
+    let frameTimer  = null;    // setInterval ids
+    let imuTimer    = null;
+    let canvas, ctx;           // off-screen canvas for frame capture
+
+    // Helper: little-endian Float64 → Uint8Array -------------------------------
+    function f64(value) {
+      const buf = new ArrayBuffer(8);
+      new DataView(buf).setFloat64(0, value, true);
+      return new Uint8Array(buf);
+    }
+
+    // Button handlers ----------------------------------------------------------
+    btnStart.onclick = async () => {
+      btnStart.disabled = true;
+      btnStop.disabled  = false;
+
+      // 1. start webcam --------------------------------------------------------
+      stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      video.srcObject = stream;
+
+      // off-screen canvas same size as the stream
+      await video.play();
+      canvas = document.createElement('canvas');
+      canvas.width  = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx = canvas.getContext('2d');
+
+      // 2. create bag writer ---------------------------------------------------
+      writer = new Writer();      // browser/in-memory mode
+      writer.open();
+
+      // sensor_msgs/Image connection (uncompressed – same as original bag)
+      connImage = writer.addConnection(
+        '/cam0/image_raw',
+        'sensor_msgs/Image',   // ROS1 shorthand (no /msg/) for broad tool compat
+      );
+
+      // sensor_msgs/Imu connection
+      connImu = writer.addConnection(
+        '/imu',
+        'sensor_msgs/Imu',
+      );
+
+      const t0 = performance.now();
+
+      // 3. start periodic capture ---------------------------------------------
+      frameTimer = setInterval(() => {
+            // capture RGBA pixel data and convert to mono8 (grayscale)
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+            // Convert RGBA → grayscale (simple luminance)
+            const rgba = imgData.data;
+            const gray = new Uint8Array(rgba.length / 4);
+            for (let i = 0, j = 0; i < rgba.length; i += 4, j += 1) {
+              // Luma formula: 0.299 R + 0.587 G + 0.114 B  (approx using ints)
+              gray[j] = (rgba[i] * 77 + rgba[i + 1] * 150 + rgba[i + 2] * 29) >> 8;
+            }
+
+            const stamp = BigInt(Math.floor((performance.now() - t0) * 1e6)); // ns
+            const payload = buildImageMessage({
+              stampNs: stamp,
+              width: canvas.width,
+              height: canvas.height,
+              encoding: 'mono8',
+              isBigEndian: 0,
+              step: canvas.width, // one byte per pixel
+              data: gray,
+            });
+            writer.write(connImage, Number(stamp), payload);
+      }, 100);          // 10 Hz image stream
+
+      imuTimer = setInterval(() => {
+            const stamp = BigInt(Math.floor((performance.now() - t0) * 1e6));
+
+            // populate orientation (none – zeros + w=1), acceleration / gyro
+            const accel = [
+              (Math.random() * 2 - 1),
+              (Math.random() * 2 - 1),
+              (Math.random() * 2 - 1),
+            ];
+            const gyro = [
+              (Math.random() * 2 - 1) * Math.PI,
+              (Math.random() * 2 - 1) * Math.PI,
+              (Math.random() * 2 - 1) * Math.PI,
+            ];
+
+            const imuPayload = buildImuMessage({
+              stampNs: stamp,
+              linearAccel: accel,
+              angularVelocity: gyro,
+            });
+            writer.write(connImu, Number(stamp), imuPayload);
+      }, 20);           // 50 Hz IMU
+    };
+
+    btnStop.onclick = () => {
+      // 1. stop capture timers -----------------------------------------------
+      clearInterval(frameTimer);
+      clearInterval(imuTimer);
+
+      // 2. close writer & get bag --------------------------------------------
+      writer.close();
+      const bagData = writer.getUint8Array();
+      const blob = new Blob([bagData], { type: 'application/octet-stream' });
+
+      // 3. offer for download -------------------------------------------------
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `webcam_${Date.now()}.bag`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+
+      // 4. cleanup ------------------------------------------------------------
+      stream.getTracks().forEach(t => t.stop());
+      video.srcObject = null;
+
+      btnStart.disabled = false;
+      btnStop.disabled  = true;
+    };
+  </script>
+</body>
+</html>

@@ -17,13 +17,14 @@ produced here can be opened with any existing ROS tooling.
 
 ```bash
 # Run the small unit-test suite (writes & reads a few bags)
-node js/tests/run.js
+node js/tests/run.mjs
 ```
 
 ### Write a bag on disk
 
 ```js
-const { Writer } = require('./js/writer');
+// After installing from npm:
+import { Writer } from 'rosbags'; // Node ESM variant
 
 const bag = new Writer('example.bag');   // pass a path ⇒ write to disk
 bag.open();
@@ -41,7 +42,7 @@ bag.close();
 ### Create a bag entirely in memory (browser-friendly)
 
 ```js
-import { Writer } from './js/writer.mjs';   // ESM variant
+import { Writer } from 'rosbags';
 
 const writer = new Writer();        // no path ⇒ keep data in memory
 writer.open();
@@ -77,14 +78,15 @@ Two kinds of tests live in `js/tests/`:
 * `test_writer_rosbag_read.js` – round-trip check that writes with *this*
   writer and reads back using the upstream `rosbag` npm dependency.
 
-The tests load **`dist/rosbags.js`**, so they exercise the exact bundle you
-would publish on npm.  A placeholder stub exists in `dist/` which forwards to
-`writer.js`; building will overwrite it.
+The tests load **`dist/rosbags.js`** (CommonJS stub) so they exercise the same
+API surface without requiring a build step.  When you run `npm run build`, the
+real bundles `dist/rosbags.node.mjs` (ESM) and `dist/rosbags.browser.js`
+overwrite / complement the stub.
 
 Run the suite via:
 
 ```bash
-node js/tests/run.js
+node js/tests/run.mjs
 
 ---
 
@@ -92,8 +94,10 @@ node js/tests/run.js
 
 The `package.json` includes convenience scripts:
 
-* `npm run build` – Bundles `writer.js` and its tiny helpers into
-  `dist/rosbags.js` using [esbuild](https://esbuild.github.io/).
+* `npm run build` – Generates two self-contained bundles using
+  [esbuild](https://esbuild.github.io/):
+  * `dist/rosbags.node.mjs` (ESM for Node)
+  * `dist/rosbags.browser.js` (IIFE for browsers)
 * `npm publish` – Publish the package.  A `prepublishOnly` hook ensures the
   bundle is rebuilt and the tests are green before the actual upload.
 

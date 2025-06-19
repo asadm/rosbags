@@ -32,17 +32,14 @@ function mkbag(name) {
   writer.write(conn, 11, Buffer.from([0x43])); // 67
   writer.close();
 
-  // 2) Read back using rosbag (npm) in a separate Node process so that we can
-  // synchronously capture the results.
+  // 2) Read back using rosbag (npm) in a separate Node process.
   const readerScript = `
     const rosbag = require('rosbag');
     (async () => {
       const bag = await rosbag.open(process.argv[1]);
       const msgs = [];
-      await bag.readMessages({ noParse: true }, (r) => {
-        msgs.push({ topic: r.topic, data: r.data.toString('hex') });
-      });
-      console.log(JSON.stringify(msgs));
+      await bag.readMessages({ noParse: true }, (r) => msgs.push(r));
+      console.log(JSON.stringify(msgs.map(m => ({ topic: m.topic, data: m.data.toString('hex') }))));
     })().catch(e => { console.error(e); process.exit(1); });
   `;
 

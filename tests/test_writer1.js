@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 
+// Use the dist bundle stub for tests.
 const { Writer, WriterError } = require('../dist/rosbags');
 
 const TMP_DIR = path.join(__dirname, 'tmp');

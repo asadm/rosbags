@@ -5,14 +5,18 @@
   "main": "writer.js",
   "type": "commonjs",
   "author": "Asad Memon",
-  "license": "Apache-2.0",
+  "license": "MIT",
   "exports": {
     ".": "./writer.js"
   },
   "scripts": {
-    "test": "node tests/run.js"
+    "test": "node tests/run.js",
+    "build": "esbuild writer.js --bundle --platform=node --format=cjs --outfile=dist/rosbags.js",
+    "prepublishOnly": "npm run build && npm test",
+    "publish": "npm publish --access public"
   },
   "devDependencies": {
+    "esbuild": "^0.19.12",
     "rosbag": "^4.0.1"
   }
 }

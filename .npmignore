@@ -1,0 +1,13 @@
+# Exclude development and test resources from npm package
+
+tests/
+tmp/
+node_modules/
+docs/
+**/*.map
+*.log
+package-lock.json
+
+# exclude esbuild shim (not needed in prod)
+shims/
+

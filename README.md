@@ -81,6 +81,20 @@ Run them via:
 
 ```bash
 node js/tests/run.js
+
+---
+
+## Publishing to npm
+
+The `package.json` includes convenience scripts:
+
+* `npm run build` – Bundles `writer.js` and its tiny helpers into
+  `dist/rosbags.js` using [esbuild](https://esbuild.github.io/).
+* `npm publish` – Publish the package.  A `prepublishOnly` hook ensures the
+  bundle is rebuilt and the tests are green before the actual upload.
+
+Everything required at runtime is embedded in the generated bundle, so the
+published module stays dependency-free.
 ```
 
 ---

@@ -14,12 +14,11 @@
   <video id="preview" autoplay muted playsinline></video><br/>
   <button id="btnStart">Start recording</button>
   <button id="btnStop"  disabled>Stop recording</button>
+  <!-- Load rosbags browser bundle which registers global `rosbagsWriter` -->
+  <script src="./dist/rosbags.browser.js"></script>
   <script type="module">
-    // Buffer polyfill for browsers (writer.js expects Node Buffer API)
-    import { Buffer as BufferPolyfill } from 'https://cdn.jsdelivr.net/npm/buffer@6.0.3/+esm';
-    window.Buffer = BufferPolyfill;
-
-    import { Writer, buildImageMessage, buildImuMessage } from './writer.browser.js';
+    // Browser bundle attached earlier exposes global `rosbagsWriter`.
+    const { Writer, buildImageMessage, buildImuMessage } = rosbagsWriter;
 
     // Element references ------------------------------------------------------
     const video = document.getElementById('preview');

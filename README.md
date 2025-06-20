@@ -1,10 +1,10 @@
-# rosbags – Zero-dependency ROS1 bag writer for Node & the browser
+# rosbags – zero-dependency ROS1 bag writer for Node & the browser
 
 This directory contains a *minimal* implementation of a ROS1 (format v2.0)
 **bag writer** in pure JavaScript with **zero runtime dependencies** – not even
-`buffer`, `ieee754` or friends.  The only modules it relies on are provided by
-Node.js itself (`fs`, `path`, …), which means it also works unchanged in the
-browser after bundling.
+`buffer` (we prebundle a polyfill for browser), `ieee754` or friends.  The only 
+modules it relies on are provided by Node.js itself (`fs`, `path`, …), which 
+means it also works unchanged in the browser after bundling.
 
 The code is a direct, line-for-line port of the
 [rosbags](https://gitlab.com/ternaris/rosbags) reference implementation written
@@ -20,7 +20,53 @@ produced here can be opened with any existing ROS tooling.
 node js/tests/run.mjs
 ```
 
-### Write a bag on disk
+### Install via npm
+
+```bash
+npm install rosbags
+```
+
+### Usage in Node (ESM)
+
+```js
+import { Writer } from 'rosbags';
+
+const bag = new Writer('example.bag');
+bag.open();
+const conn = bag.addConnection('/foo', 'std_msgs/msg/Int8');
+bag.write(conn, 1, Buffer.from([0x01]));
+bag.close();
+```
+
+### Usage in Node (CommonJS)
+
+```js
+const { Writer } = require('rosbags');
+// ...identical to above
+```
+
+### Usage in the Browser via CDN
+
+Add a single script tag that exposes `rosbagsWriter` globally:
+
+```html
+<script src="https://unpkg.com/rosbags/dist/rosbags.browser.js"></script>
+<script>
+  // The bundle already contains a Buffer poly-fill, no extra scripts needed.
+  const { Writer } = rosbagsWriter;
+  const w = new Writer();
+  w.open();
+  const c = w.addConnection('/foo', 'std_msgs/msg/Int8');
+  w.write(c, 123n, new Uint8Array([0x42]));
+  w.close();
+  const blob = new Blob([w.getUint8Array()], { type: 'application/octet-stream' });
+  // download or upload blob here
+</script>
+```
+
+---
+
+### Write a bag on disk (from source checkout)
 
 ```js
 // After installing from npm:
@@ -109,6 +155,4 @@ published module stays dependency-free.
 
 ## License
 
-This JavaScript port is released under the MIT license (see `LICENSE`).  The
-surrounding Python codebase is available under Apache-2.0 – the two licenses
-are compatible and may coexist within the same repository.
+This JavaScript port is released under the MIT license (see `LICENSE`).

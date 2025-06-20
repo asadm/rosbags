@@ -1,6 +1,6 @@
 {
   "name": "rosbags",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Minimal ROS bag (v1.2) writer ported from rosbags python implementation.",
   "main": "./dist/rosbags.node.js",
   "type": "commonjs",
@@ -17,12 +17,13 @@
     "test": "node tests/run.mjs",
     "build": "npm run build:node && npm run build:web",
     "build:node": "esbuild writer.js --bundle --platform=node --format=esm --outfile=dist/rosbags.node.mjs && esbuild writer.js --bundle --platform=node --format=cjs --outfile=dist/rosbags.js",
-    "build:web": "esbuild writer.js --bundle --platform=browser --format=iife --global-name=rosbagsWriter --outfile=dist/rosbags.browser.js",
+    "build:web": "esbuild writer.js --bundle --platform=browser --format=iife --global-name=rosbagsWriter --outfile=dist/rosbags.browser.js --inject:./shims/buffer-shim.js",
     "prepublishOnly": "npm run build && npm test",
     "publish": "npm publish --access public"
   },
   "devDependencies": {
     "esbuild": "^0.19.12",
-    "rosbag": "^4.0.1"
+    "rosbag": "^4.0.1",
+    "buffer": "^6.0.3"
   }
 }
